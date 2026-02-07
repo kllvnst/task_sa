@@ -150,5 +150,5 @@ Accept: application/json
 
 ### *Выполнение задания 3:*
 
-![Alt text](data/2.svg)
+![Alt text](data/2.png)
 
