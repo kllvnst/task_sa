@@ -72,6 +72,72 @@
 Привести пример ответа этого REST API в соответствии с макетом. Формат - JSON. Учесть, что при клике на плашку магазина должен осуществляться переход по ссылке на внешний ресурс. 
 
 ### *Выполнение задания 2:*
+*1. Пример запроса REST API*
+
+`GET /api/v1/partner-stores?latitude=55.7522&longitude=37.6156&user_city_id=77 HTTP/1.1
+Host: api.petrushkazelenaya.ru
+Authorization: Bearer <user_token>
+Accept-Language: ru-RU
+Accept: application/json
+`
+
+Пояснения:
+- latitude, longitude — геокоординаты пользователя (для расчёта времени доставки)
+- user_city_id — идентификатор города (для фильтрации актуальных партнёров)
+- Accept-Language — для локализации названий и формата времени
+- Authorization — для персонализации (токен авторизованного пользователя)
+
+*2. Пример успешного ответа REST API*
+
+```
+{
+  "status": "success",
+  "data": {
+    "stores": [
+      {
+        "id": "metro_001",
+        "name": "METRO",
+        "logo_url": "https://cdn.petrushkazelenaya.ru/logos/metro_logo_ru.png",
+        "delivery_time_display": "Сегодня, 14:00",
+        "delivery_time_iso": "2026-02-06T14:00:00+03:00",
+        "external_link": "https://metro.ru?partner=petrushka&utm_source=mobile_app",
+        "is_active": true
+      },
+      {
+        "id": "auchan_002",
+        "name": "Ашан",
+        "logo_url": "https://cdn.petrushkazelenaya.ru/logos/auchan_logo_ru.png",
+        "delivery_time_display": "Завтра, 10:00",
+        "delivery_time_iso": "2026-02-07T10:00:00+03:00",
+        "external_link": "https://auchan.ru/partners/petrushka",
+        "is_active": true
+      },
+      {
+        "id": "vkusvill_003",
+        "name": "ВкусВилл",
+        "logo_url": "https://cdn.petrushkazelenaya.ru/logos/vkusvill_logo_ru.png",
+        "delivery_time_display": "от 20 до 60 минут",
+        "delivery_time_iso": "2026-02-06T12:34:56+03:00",
+        "external_link": "https://vkusvill.ru?ref=petrushka_app",
+        "is_active": true
+      },
+      {
+        "id": "victoria_004",
+        "name": "Виктория",
+        "logo_url": "https://cdn.petrushkazelenaya.ru/logos/victoria_logo_ru.png",
+        "delivery_time_display": "Послезавтра, 09:00",
+        "delivery_time_iso": "2026-02-08T09:00:00+03:00",
+        "external_link": "https://victoria-market.ru/promo/petrushka",
+        "is_active": true
+      }
+    ]
+  },
+  "meta": {
+    "count": 4,
+    "generated_at": "2026-02-06T12:34:56+03:00"
+  }
+}
+```
 
 ## *Задание 3: архитектура*
 
@@ -84,3 +150,44 @@
 
 ### *Выполнение задания 3:*
 
+```
+graph TD
+    subgraph Client_Side [Клиентская часть]
+        App[Mobile App: iOS/Android]
+    end
+
+    subgraph Backend_Infrastructure [Бэкенд "Петрушка Зеленая"]
+        RegService[Device Registration Service]
+        DB[(Devices DB: UserID <-> Token)]
+        
+        subgraph Event_Bus [Bus / Kafka]
+            E1[Cart Events]
+            E2[Order Events]
+            E3[Marketing Events]
+        end
+
+        PushService[Push Notification Service]
+        Template[Template Service]
+    end
+
+    subgraph External_Gateways [Провайдеры]
+        FCM[Google FCM]
+        APNs[Apple APNs]
+    end
+
+    %% Flow 1: Registration
+    App -->|1. Register Token| RegService
+    RegService -->|2. Save| DB
+
+    %% Flow 2: Event Processing
+    E1 & E2 & E3 -->|3. Event Message| PushService
+    PushService -->|4. Get Tokens| DB
+    PushService -->|5. Get Template| Template
+
+    %% Flow 3: Sending
+    PushService -->|6a. Send Push| FCM
+    PushService -->|6b. Send Push| APNs
+
+    %% Flow 4: Delivery
+    FCM & APNs -.->|7. Delivery| App
+    ```
