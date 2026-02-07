@@ -150,44 +150,5 @@ Accept: application/json
 
 ### *Выполнение задания 3:*
 
-```
-graph TD
-    subgraph Client_Side [Клиентская часть]
-        App[Mobile App: iOS/Android]
-    end
+![Alt text](data/2.png)
 
-    subgraph Backend_Infrastructure [Бэкенд "Петрушка Зеленая"]
-        RegService[Device Registration Service]
-        DB[(Devices DB: UserID <-> Token)]
-        
-        subgraph Event_Bus [Bus / Kafka]
-            E1[Cart Events]
-            E2[Order Events]
-            E3[Marketing Events]
-        end
-
-        PushService[Push Notification Service]
-        Template[Template Service]
-    end
-
-    subgraph External_Gateways [Провайдеры]
-        FCM[Google FCM]
-        APNs[Apple APNs]
-    end
-
-    %% Flow 1: Registration
-    App -->|1. Register Token| RegService
-    RegService -->|2. Save| DB
-
-    %% Flow 2: Event Processing
-    E1 & E2 & E3 -->|3. Event Message| PushService
-    PushService -->|4. Get Tokens| DB
-    PushService -->|5. Get Template| Template
-
-    %% Flow 3: Sending
-    PushService -->|6a. Send Push| FCM
-    PushService -->|6b. Send Push| APNs
-
-    %% Flow 4: Delivery
-    FCM & APNs -.->|7. Delivery| App
-    ```
